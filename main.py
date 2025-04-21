@@ -1,10 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
-from models import Base, User
-import schemas
-from models import EventLog
-from schemas import EventLogCreate, EventLogResponse
+from models import Base, User, EventLog, Routine, ActionLog, NodeStatus
+import schemas 
+from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse
 
 
 Base.metadata.create_all(bind=engine)
@@ -18,6 +17,7 @@ def get_db():
     finally:
         db.close()
 
+#User
 @app.post("/users", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     new_user = User(name=user.name, phone=user.phone)
@@ -54,3 +54,50 @@ def get_user_event_logs(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="이벤트 로그 없음")
     return logs
 
+# 루틴
+@app.post("/routines", response_model=RoutineResponse)
+def create_routine(routine: RoutineCreate, db: Session = Depends(get_db)):
+    new_routine = Routine(**routine.model_dump())
+    db.add(new_routine)
+    db.commit()
+    db.refresh(new_routine)
+    return new_routine
+
+@app.get("/routines/user/{user_id}", response_model=list[RoutineResponse])
+def get_user_routines(user_id: int, db: Session = Depends(get_db)):
+    routines = db.query(Routine).filter(Routine.user_id == user_id).all()
+    if not routines:
+        raise HTTPException(status_code=404, detail="루틴 없음")
+    return routines
+
+#액션 로그
+@app.post("/action-logs", response_model=ActionLogResponse)
+def create_action_log(action: ActionLogCreate, db: Session = Depends(get_db)):
+    new_action = ActionLog(**action.model_dump())
+    db.add(new_action)
+    db.commit()
+    db.refresh(new_action)
+    return new_action
+
+@app.get("/action-logs/event/{event_id}", response_model=list[ActionLogResponse])
+def get_action_logs(event_id: int, db: Session = Depends(get_db)):
+    logs = db.query(ActionLog).filter(ActionLog.event_id == event_id).all()
+    if not logs:
+        raise HTTPException(status_code=404, detail="액션 로그 없음")
+    return logs
+
+#노드 상태
+@app.post("/node-statuses", response_model=NodeStatusResponse)
+def create_node_status(node: NodeStatusCreate, db: Session = Depends(get_db)):
+    new_node = NodeStatus(**node.model_dump())
+    db.add(new_node)
+    db.commit()
+    db.refresh(new_node)
+    return new_node
+
+@app.get("/node-statuses/event/{event_id}", response_model=list[NodeStatusResponse])
+def get_node_statuses(event_id: int, db: Session = Depends(get_db)):
+    nodes = db.query(NodeStatus).filter(NodeStatus.event_id == event_id).all()
+    if not nodes:
+        raise HTTPException(status_code=404, detail="노드 상태 없음")
+    return nodes
