@@ -7,8 +7,8 @@ app = FastAPI()
 
 # 사용자 요청
 class UserCreate(BaseModel):
-    name: str = Field(..., example="노경준", description="사용자 이름")
-    phone: str = Field(..., example="010-3771-5801", description="전화번호")
+    name: str = Field(..., example="홍길동", description="사용자 이름")
+    phone: str = Field(..., example="010-xxxx-xxxx", description="전화번호")
 
 # 사용자 응답
 class UserResponse(BaseModel):
