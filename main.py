@@ -1,3 +1,4 @@
+# 전체 API 통합 및 DB 연동
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
@@ -17,7 +18,7 @@ def get_db():
     finally:
         db.close()
 
-#User
+#User  
 @app.post("/users", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     new_user = User(name=user.name, phone=user.phone)
