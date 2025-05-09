@@ -14,33 +14,34 @@
 | 액션 로그(ActionLog) | 슬랙 등 외부 알림 수행 기록 |
 | 노드 상태(NodeStatus) | 센서 등의 상태 기록 |
 
-25myproject/
-├── main.py               # FastAPI 앱 실행 파일
-├── database.py           # SQLAlchemy DB 설정
-├── models.py             # ORM 모델 정의
-├── schemas.py            # Pydantic 요청/응답 모델
-├── requirements.txt      # 의존 패키지 목록
-├── README.md             # 프로젝트 설명서
-└── app.db                # SQLite DB 파일 (자동 생성)
+
+#25myproject
+ main.py # 서버 실행 진입점
+ models.py # SQLAlchemy ORM 모델 정의
+ schemas.py # Pydantic 스키마 정의
+ database.py # DB 세션 설정
+ README.md # 프로젝트 설명 문서
+ requirements.txt # 의존성 패키지 목록
+ alembic # 마이그레이션 폴더
+ alembic/versions # 마이그레이션 히스토리
+
 
 ---
-각 테이블은 models.py에 정의되어 있으며, Base.metadata.create_all(bind=engine)을 통해 자동 생성됩니다.
-
 
 ##  실행 방법
 
 ```bash
-# 가상환경 실행
+python -m venv .venv
 .venv\Scripts\activate  # Windows 기준
 
 # 패키지 설치
 pip install -r requirements.txt
 
-# 데이터베이스 생성
-python database.py  # 또는 main.py 실행 시 자동 생성됨
+# 데이터베이스 초기화
+alembic upgrade head
 
 # 서버 실행
 uvicorn main:app --reload
 
 #확인용
-http://localhost:8000/docs   # Swagger 문서 
+http://127.0.0.1:8000/docs   # Swagger 문서 
