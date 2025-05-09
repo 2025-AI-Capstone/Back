@@ -101,3 +101,5 @@ def get_node_statuses(event_id: int, db: Session = Depends(get_db)):
     if not nodes:
         raise HTTPException(status_code=404, detail="노드 상태 없음")
     return nodes
+
+##########
