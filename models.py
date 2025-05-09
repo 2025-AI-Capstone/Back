@@ -6,9 +6,11 @@ from database import Base
 #User
 class User(Base):
     __tablename__ = "users"
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
+    password = Column(String, nullable=False)  # 로그인 구현현
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

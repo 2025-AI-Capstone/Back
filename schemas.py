@@ -5,14 +5,20 @@ from datetime import datetime
 class UserCreate(BaseModel):
     name: str
     phone: str
+    password: str  # 로그인 구현 패스워드드
 
-class UserResponse(UserCreate):
+class UserResponse(BaseModel):
     id: int
+    name: str
+    phone: str
     created_at: datetime
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = {"from_attributes": True}
+
+#로그인
+class LoginRequest(BaseModel):
+    name: str
+    password: str
 
 # 긴급 연락처 요청 
 class EmergencyContactCreate(BaseModel):
