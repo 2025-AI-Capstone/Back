@@ -28,7 +28,11 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 #User
 @app.post("/users", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    new_user = User(name=user.name, phone=user.phone)
+    new_user = User(
+        name=user.name, 
+        phone=user.phone,
+        password = user.password
+        )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
