@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
-from models import Base, User, EventLog, Routine, ActionLog, NodeStatus
+from models import Base, User, EmergencyContact, EventLog, Routine, ActionLog, NodeStatus
 import schemas 
-from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse
+from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse
 
 
 Base.metadata.create_all(bind=engine)
@@ -32,6 +32,20 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+# 긴급 연락처 등록
+@app.post("/emergency-contacts", response_model=EmergencyContactResponse)
+def create_emergency_contact(data: EmergencyContactCreate, db: Session = Depends(get_db)):
+    contact = EmergencyContact(**data.model_dump())
+    db.add(contact)
+    db.commit()
+    db.refresh(contact)
+    return contact
+
+# 사용자별 연락처 조회
+@app.get("/emergency-contacts/user/{user_id}", response_model=list[EmergencyContactResponse])
+def get_contacts_by_user(user_id: int, db: Session = Depends(get_db)):
+    return db.query(EmergencyContact).filter(EmergencyContact.user_id == user_id).all()
 
 # 이벤트 로그 
 @app.post("/event-logs", response_model=EventLogResponse)

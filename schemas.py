@@ -14,6 +14,20 @@ class UserResponse(UserCreate):
         "from_attributes": True
     }
 
+# 긴급 연락처 요청 
+class EmergencyContactCreate(BaseModel):
+    user_id: int
+    name: str
+    phone: str
+    relation: str
+
+# 응답
+class EmergencyContactResponse(EmergencyContactCreate):
+    id: int
+
+    model_config = {
+        "from_attributes": True
+    }
 
 #이벤트로그그
 class EventLogCreate(BaseModel):

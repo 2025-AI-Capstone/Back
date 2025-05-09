@@ -11,6 +11,20 @@ class User(Base):
     phone = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
+#모델
+#EmergencyContact
+class EmergencyContact(Base):
+    __tablename__ = "emergency_contacts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer)
+    name = Column(String)
+    phone = Column(String)
+    relation = Column(String)
+
+
+
 #EventLog
 class EventLog(Base):
     __tablename__ = "event_logs"
