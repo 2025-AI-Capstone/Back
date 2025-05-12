@@ -17,7 +17,7 @@ def get_db():
     finally:
         db.close()
 
-#로그인 
+#로그인 구현현
 @app.post("/login", response_model=LoginResponse)
 def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.name == request.name).first()
