@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import engine, SessionLocal
 from models import Base, User, EmergencyContact, EventLog, Routine, ActionLog, NodeStatus
 import schemas 
-from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest
+from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse
 
 
 Base.metadata.create_all(bind=engine)
@@ -18,12 +18,13 @@ def get_db():
         db.close()
 
 #로그인 
-@app.post("/login")
+@app.post("/login", response_model=LoginResponse)
 def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.name == request.name).first()
     if not user or user.password != request.password:
         raise HTTPException(status_code=401, detail="잘못된 로그인 정보입니다.")
     return {"message": "로그인 성공", "user_id": user.id}
+
 
 #User
 @app.post("/users", response_model=schemas.UserResponse)

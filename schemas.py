@@ -20,6 +20,11 @@ class LoginRequest(BaseModel):
     name: str
     password: str
 
+class LoginResponse(BaseModel):
+    message: str
+    user_id: int
+
+
 # 긴급 연락처 요청 
 class EmergencyContactCreate(BaseModel):
     user_id: int
