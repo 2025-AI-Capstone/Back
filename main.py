@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import Query,FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
 from models import Base, User, EmergencyContact, EventLog, Routine, ActionLog, NodeStatus
@@ -13,7 +13,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-def get_db():
+def get_db():  
     db = SessionLocal()
     try:
         yield db
@@ -36,6 +36,15 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     if not user or user.password != request.password:
         raise HTTPException(status_code=401, detail="잘못된 로그인 정보입니다.")
     return {"message": "로그인 성공", "user_id": user.id}
+
+#user 로그인 추가 코드
+@app.get("/api/user", response_model=schemas.UserResponse)
+def get_user_api(user_id: int = Query(1), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, detail="User not found")
+    return user
+
 
 
 #User
