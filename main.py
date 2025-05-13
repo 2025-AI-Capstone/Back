@@ -1,12 +1,14 @@
-from fastapi import Header,FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Header, Depends, Cookie, Request, Response,HTTPException
 from sqlalchemy.orm import Session
 from database import  SessionLocal
+from uuid import uuid4 
 from models import  User, EmergencyContact, EventLog, Routine, ActionLog, NodeStatus
 import schemas 
 from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 
+session_store = {}
 
 app = FastAPI()
 
@@ -17,34 +19,32 @@ def get_db():
     finally:
         db.close()
 
-# 모든 도메인 허용
+# 도메인 허용
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 모든 origin 허용
+    allow_origins=["http://localhost:3000"],  # origin 허용
     allow_credentials=True,
     allow_methods=["*"],  # 모든 HTTP 메서드 허용
     allow_headers=["*"],  # 모든 헤더 허용        
 )
 #로그인 구현 요청
 @app.post("/login", response_model=LoginResponse)
-def login(request: LoginRequest, db: Session = Depends(get_db)):
+def login(request: LoginRequest, response: Response,db: Session = Depends(get_db)):
     user = db.query(User).filter(User.name == request.name).first()
     if not user or user.password != request.password:
         raise HTTPException(status_code=401, detail="잘못된 로그인 정보입니다.")
+    session_id = str(uuid4())
+    session_store[session_id] = user.id
+    response.set_cookie(key="session_id", value=session_id, httponly=True)
     return {"message": "로그인 성공", "user_id": user.id}
 
-#로그인 응답
-@app.get("/api/user", response_model=schemas.UserResponse)
-def get_user_api(Authorization: str = Header(None), db: Session = Depends(get_db)):
-    try:
-        user_id = int(Authorization)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=401, detail="권한 없음")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+@app.get("/api/user")
+def get_user(session_id: str = Cookie(None)):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="Session invalid or expired")
+    return {"user_id": session_store[session_id]}
+
 
 
 
