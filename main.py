@@ -4,6 +4,9 @@ from database import engine, SessionLocal
 from models import Base, User, EmergencyContact, EventLog, Routine, ActionLog, NodeStatus
 import schemas 
 from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 
 Base.metadata.create_all(bind=engine)
@@ -17,6 +20,15 @@ def get_db():
     finally:
         db.close()
 
+# 모든 도메인 허용
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 모든 origin 허용
+    allow_credentials=True,
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용
+    allow_headers=["*"],  # 모든 헤더 허용        
+)
 #로그인 구현현
 @app.post("/login", response_model=LoginResponse)
 def login(request: LoginRequest, db: Session = Depends(get_db)):
