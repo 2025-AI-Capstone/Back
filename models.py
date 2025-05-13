@@ -1,7 +1,9 @@
 # models.py
 from sqlalchemy import Column, Integer, String, Float, DateTime, Time
+from sqlalchemy.orm import declarative_base
 from datetime import datetime
-from database import Base
+
+Base = declarative_base()
 
 #User
 class User(Base):

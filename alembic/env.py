@@ -20,7 +20,6 @@ from database import Base  #  DB 연결한 파일
 from models import *       # 모델 파일
 target_metadata = Base.metadata
 
-target_metadata = None
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

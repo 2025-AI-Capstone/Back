@@ -1,15 +1,12 @@
-from fastapi import Query,FastAPI, Depends, HTTPException
+from fastapi import Header,FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import engine, SessionLocal
-from models import Base, User, EmergencyContact, EventLog, Routine, ActionLog, NodeStatus
+from database import  SessionLocal
+from models import  User, EmergencyContact, EventLog, Routine, ActionLog, NodeStatus
 import schemas 
 from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 
-
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -29,7 +26,7 @@ app.add_middleware(
     allow_methods=["*"],  # 모든 HTTP 메서드 허용
     allow_headers=["*"],  # 모든 헤더 허용        
 )
-#로그인 구현현
+#로그인 구현 요청
 @app.post("/login", response_model=LoginResponse)
 def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.name == request.name).first()
@@ -37,13 +34,18 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="잘못된 로그인 정보입니다.")
     return {"message": "로그인 성공", "user_id": user.id}
 
-#user 로그인 추가 코드
+#로그인 응답
 @app.get("/api/user", response_model=schemas.UserResponse)
-def get_user_api(user_id: int = Query(1), db: Session = Depends(get_db)):
+def get_user_api(Authorization: str = Header(None), db: Session = Depends(get_db)):
+    try:
+        user_id = int(Authorization)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="권한 없음")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not found")
     return user
+
 
 
 
