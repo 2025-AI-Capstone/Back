@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Header, Depends, Cookie, Request, Response,HTTPException
+from fastapi import FastAPI, Header, Depends, Cookie, Request, Response,HTTPException, APIRouter
 from sqlalchemy.orm import Session
 from database import  SessionLocal
 from uuid import uuid4 
@@ -77,6 +77,19 @@ def create_emergency_contact(data: EmergencyContactCreate, db: Session = Depends
     db.commit()
     db.refresh(contact)
     return contact
+
+router = APIRouter()
+
+@router.delete("/emergency-contact/{contact_id}")
+def delete_emergency_contact(contact_id: int, db: Session = Depends(get_db)):
+    contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    db.delete(contact)
+    db.commit()
+    return {"message": "삭제가 되지 않았습니다."}
+
 
 # 사용자별 연락처 조회
 @app.get("/emergency-contacts/user/{user_id}", response_model=list[EmergencyContactResponse])

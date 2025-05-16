@@ -40,7 +40,7 @@ class EmergencyContactResponse(EmergencyContactCreate):
         "from_attributes": True
     }
 
-#이벤트로그그
+#이벤트로그
 class EventLogCreate(BaseModel):
     user_id: int
     event_type: str
