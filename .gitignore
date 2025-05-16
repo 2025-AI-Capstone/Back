@@ -3,5 +3,5 @@
 .venv
 
 # cache file
-__pycache__
+__pycache__/
 *.pyc
