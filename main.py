@@ -6,7 +6,7 @@ from database import  SessionLocal
 from uuid import uuid4 
 from models import  User, EmergencyContact, EventLog, Routine, ActionLog, NodeStatus
 import schemas
-from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse, DailyStatsResponse
+from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse, DailyStatsResponse, EmergencyContactUpdate
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -97,7 +97,23 @@ def delete_emergency_contact(contact_id: int, db: Session = Depends(get_db)):
     
     db.delete(contact)
     db.commit()
-    return {"message": "삭제 되었습니다."}  
+    return {"message": "삭제 되었습니다."} 
+ 
+# 긴급 연락처 수정정
+@app.put("/emergency-contact/{contact_id}", response_model=EmergencyContactResponse)
+def update_emergency_contact(contact_id: int, data: EmergencyContactUpdate, db: Session = Depends(get_db)):
+    contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="연락처를 찾을 수 없습니다.")
+
+    contact.name = data.name
+    contact.phone = data.phone
+    contact.relation = data.relation
+
+    db.commit()
+    db.refresh(contact)
+    return contact
+
 
 # 이벤트 로그 
 @app.post("/event-logs", response_model=EventLogResponse)
@@ -194,7 +210,7 @@ def get_today_stats(db: Session = Depends(get_db)):
     return DailyStatsResponse(
         date=today,
         fall_event_count=fall_count,
-        average_confidence_score=round(avg_confidence, 2) if avg_confidence else None,
+        average_confidence_score=round(avg_confidence, 2) if avg_confidence else 0.0,
         routine_count=routine_count
     )
 

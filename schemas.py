@@ -33,6 +33,12 @@ class EmergencyContactCreate(BaseModel):
     phone: str
     relation: str
 
+#수정
+class EmergencyContactUpdate(BaseModel):
+    name: str
+    phone: str
+    relation: str
+
 # 응답
 class EmergencyContactResponse(EmergencyContactCreate):
     id: int
@@ -99,8 +105,9 @@ class NodeStatusResponse(NodeStatusCreate):
         "from_attributes": True
     }
 
+# 오늘의 통계 응답
 class DailyStatsResponse(BaseModel):
-    date: datetime
-    fall_event_count: int
-    average_confidence_score: Optional[float]
-    routine_count: int
+    date: datetime                  # 날짜
+    fall_event_count: int           # 쓰러짐 개수
+    average_confidence_score: float = 0.0  # 기본값 0.0 
+    routine_count: int              # 루틴 개수
