@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Header, Depends, Cookie, Request, Response,HTTPException, APIRouter
+from fastapi import FastAPI, Header, Depends, Cookie, Request, Response,HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from datetime import datetime, time
 from database import  SessionLocal
 from uuid import uuid4 
 from models import  User, EmergencyContact, EventLog, Routine, ActionLog, NodeStatus
-import schemas 
-from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse
+import schemas
+from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse, DailyStatsResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -78,23 +80,24 @@ def create_emergency_contact(data: EmergencyContactCreate, db: Session = Depends
     db.refresh(contact)
     return contact
 
-router = APIRouter()
-
-@router.delete("/emergency-contact/{contact_id}")
-def delete_emergency_contact(contact_id: int, db: Session = Depends(get_db)):
-    contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
-    if not contact:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    
-    db.delete(contact)
-    db.commit()
-    return {"message": "삭제가 되지 않았습니다."}
 
 
 # 사용자별 연락처 조회
 @app.get("/emergency-contacts/user/{user_id}", response_model=list[EmergencyContactResponse])
 def get_contacts_by_user(user_id: int, db: Session = Depends(get_db)):
     return db.query(EmergencyContact).filter(EmergencyContact.user_id == user_id).all()
+
+
+# 긴급 연락처 삭제
+@app.delete("/emergency-contact/{contact_id}")
+def delete_emergency_contact(contact_id: int, db: Session = Depends(get_db)):
+    contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="연락처를 찾을 수 없습니다.")
+    
+    db.delete(contact)
+    db.commit()
+    return {"message": "삭제 되었습니다."}  
 
 # 이벤트 로그 
 @app.post("/event-logs", response_model=EventLogResponse)
@@ -164,5 +167,36 @@ def get_node_statuses(event_id: int, db: Session = Depends(get_db)):
     if not nodes:
         raise HTTPException(status_code=404, detail="노드 상태 없음")
     return nodes
+
+#오늘의 통계
+@app.get("/stats/today", response_model=DailyStatsResponse)
+def get_today_stats(db: Session = Depends(get_db)):
+    today = datetime.now().date()
+    start = datetime.combine(today, time.min)
+    end = datetime.combine(today, time.max)
+
+    # 쓰러짐 감지, 신뢰도 평균
+    fall_count, avg_confidence = db.query(
+        func.count(EventLog.id), #쓰러짐 감지 개수
+        func.avg(EventLog.confidence_score)  # 신뢰도 평균균
+    ).filter(
+        EventLog.event_type == "fall",
+        EventLog.detected_at >= start,
+        EventLog.detected_at <= end
+    ).first()
+
+    # 루틴 개수
+    routine_count = db.query(func.count(Routine.id)).filter(
+        Routine.created_at >= start,
+        Routine.created_at <= end
+    ).scalar()
+
+    return DailyStatsResponse(
+        date=today,
+        fall_event_count=fall_count,
+        average_confidence_score=round(avg_confidence, 2) if avg_confidence else None,
+        routine_count=routine_count
+    )
+
 
 ##########

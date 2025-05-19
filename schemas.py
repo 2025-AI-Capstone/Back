@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
 
 #User
@@ -97,3 +98,9 @@ class NodeStatusResponse(NodeStatusCreate):
     model_config = {
         "from_attributes": True
     }
+
+class DailyStatsResponse(BaseModel):
+    date: datetime
+    fall_event_count: int
+    average_confidence_score: Optional[float]
+    routine_count: int
