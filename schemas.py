@@ -8,11 +8,18 @@ class UserCreate(BaseModel):
     phone: str
     password: str  # 로그인 구현 패스워드드
 
+# 수정 코드 구현현
+class UserUpdate(BaseModel):
+    name: str
+    phone: str
+    information: str    
+
 class UserResponse(BaseModel):
     id: int
     name: str
     phone: str
     created_at: datetime
+    information: str  # 정보 필드 추가
 
     model_config = {"from_attributes": True}
 

@@ -14,6 +14,7 @@ class User(Base):
     phone = Column(String, nullable=False)
     password = Column(String, nullable=False)  # 로그인 구현현
     created_at = Column(DateTime, default=datetime.utcnow)
+    information = Column(String, default="")  # # 정보 구현
 
 
 #모델

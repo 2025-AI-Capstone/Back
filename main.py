@@ -41,6 +41,9 @@ def login(request: LoginRequest, response: Response,db: Session = Depends(get_db
     response.set_cookie(key="session_id", value=session_id, httponly=True)
     return {"message": "로그인 성공", "user_id": user.id}
 
+
+
+
 @app.get("/api/user")
 def get_user(session_id: str = Cookie(None)):
     if session_id not in session_store:
@@ -63,6 +66,22 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
+
+#수정 구현
+@app.put("/users/{user_id}", response_model=schemas.UserResponse)
+def update_user(user_id: int, data: schemas.UserUpdate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.name = data.name
+    user.phone = data.phone
+    user.information = data.information
+
+    db.commit()
+    db.refresh(user)
+    return user
+
 
 @app.get("/users/{user_id}", response_model=schemas.UserResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):
