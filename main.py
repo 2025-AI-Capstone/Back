@@ -108,7 +108,7 @@ def get_contacts_by_user(user_id: int, db: Session = Depends(get_db)):
 
 
 # 긴급 연락처 삭제
-@app.delete("/emergency-contact/{contact_id}")
+@app.delete("/emergency-contacts/{contact_id}")
 def delete_emergency_contact(contact_id: int, db: Session = Depends(get_db)):
     contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
     if not contact:
@@ -119,7 +119,7 @@ def delete_emergency_contact(contact_id: int, db: Session = Depends(get_db)):
     return {"message": "삭제 되었습니다."} 
  
 # 긴급 연락처 수정정
-@app.put("/emergency-contact/{contact_id}", response_model=EmergencyContactResponse)
+@app.put("/emergency-contacts/{contact_id}", response_model=EmergencyContactResponse)
 def update_emergency_contact(contact_id: int, data: EmergencyContactUpdate, db: Session = Depends(get_db)):
     contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
     if not contact:
