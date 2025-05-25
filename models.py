@@ -50,6 +50,7 @@ class Routine(Base):
     alarm_time = Column(Time)
     repeat_type = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)  # 오늘의 통계 추가
+    
 #ActionLog
 class ActionLog(Base):
     __tablename__ = "action_logs"
@@ -58,6 +59,8 @@ class ActionLog(Base):
     action_type = Column(String)
     triggered_by = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
+    status = Column(String)
+    
 
 #NodeStatus
 class NodeStatus(Base):

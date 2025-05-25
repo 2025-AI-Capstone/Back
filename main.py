@@ -92,8 +92,21 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 
 # 긴급 연락처 등록
 @app.post("/emergency-contacts", response_model=EmergencyContactResponse)
-def create_emergency_contact(data: EmergencyContactCreate, db: Session = Depends(get_db)):
-    contact = EmergencyContact(**data.model_dump())
+def create_emergency_contact(
+    data: EmergencyContactCreate,
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="Session invalid or expired")
+    user_id = session_store[session_id]
+
+    contact = EmergencyContact(
+        user_id=user_id,
+        name=data.name,
+        phone=data.phone,
+        relation=data.relation
+    )
     db.add(contact)
     db.commit()
     db.refresh(contact)
@@ -106,22 +119,60 @@ def create_emergency_contact(data: EmergencyContactCreate, db: Session = Depends
 def get_contacts_by_user(user_id: int, db: Session = Depends(get_db)):
     return db.query(EmergencyContact).filter(EmergencyContact.user_id == user_id).all()
 
+#자동으로 연락처 조회 
+@app.get("/emergency-contacts/me", response_model=list[EmergencyContactResponse])
+def get_my_contacts(
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="세션이 만료되었거나 없습니다.")
+    
+    user_id = session_store[session_id]
+    return db.query(EmergencyContact).filter(EmergencyContact.user_id == user_id).all()
+
 
 # 긴급 연락처 삭제
 @app.delete("/emergency-contacts/{contact_id}")
-def delete_emergency_contact(contact_id: int, db: Session = Depends(get_db)):
-    contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
+def delete_emergency_contact(
+    contact_id: int,
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="세션이 유효하지 않습니다.")
+    user_id = session_store[session_id]
+
+    contact = db.query(EmergencyContact).filter(
+        EmergencyContact.id == contact_id,
+        EmergencyContact.user_id == user_id
+    ).first()
+
     if not contact:
-        raise HTTPException(status_code=404, detail="연락처를 찾을 수 없습니다.")
-    
+        raise HTTPException(status_code=404, detail="삭제할 연락처를 찾을 수 없습니다.")
+
     db.delete(contact)
     db.commit()
-    return {"message": "삭제 되었습니다."} 
+    return {"message": "삭제 되었습니다."}
+
  
-# 긴급 연락처 수정정
+# 긴급 연락처 수정
 @app.put("/emergency-contacts/{contact_id}", response_model=EmergencyContactResponse)
-def update_emergency_contact(contact_id: int, data: EmergencyContactUpdate, db: Session = Depends(get_db)):
-    contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
+def update_emergency_contact(
+    contact_id: int,
+    data: EmergencyContactUpdate,
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="세션이 유효하지 않습니다.")
+    user_id = session_store[session_id]
+
+    contact = db.query(EmergencyContact).filter(
+        EmergencyContact.id == contact_id,
+        EmergencyContact.user_id == user_id  
+    ).first()
+
     if not contact:
         raise HTTPException(status_code=404, detail="연락처를 찾을 수 없습니다.")
 
@@ -132,6 +183,7 @@ def update_emergency_contact(contact_id: int, data: EmergencyContactUpdate, db: 
     db.commit()
     db.refresh(contact)
     return contact
+
 
 
 # 이벤트 로그 
@@ -174,7 +226,8 @@ def get_user_routines(user_id: int, db: Session = Depends(get_db)):
 #액션 로그
 @app.post("/action-logs", response_model=ActionLogResponse)
 def create_action_log(action: ActionLogCreate, db: Session = Depends(get_db)):
-    new_action = ActionLog(**action.model_dump())
+    new_action = ActionLog(**action.model_dump(),
+                           status=action.status,)
     db.add(new_action)
     db.commit()
     db.refresh(new_action)

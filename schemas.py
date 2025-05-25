@@ -35,7 +35,6 @@ class LoginResponse(BaseModel):
 
 # 긴급 연락처 요청 
 class EmergencyContactCreate(BaseModel):
-    user_id: int
     name: str
     phone: str
     relation: str
@@ -89,6 +88,7 @@ class ActionLogCreate(BaseModel):
     event_id: int
     action_type: str
     triggered_by: str
+    status : str
 
 class ActionLogResponse(ActionLogCreate):
     id: int
@@ -97,10 +97,11 @@ class ActionLogResponse(ActionLogCreate):
     model_config = {
         "from_attributes": True
     }
+#대화 
 
 #노드상태
 class NodeStatusCreate(BaseModel):
-    event_id: int
+    event_id: int     # X 없앨예정
     node_name: str
     status: str
 
