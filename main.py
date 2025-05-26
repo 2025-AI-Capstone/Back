@@ -6,6 +6,7 @@ from database import  SessionLocal
 from uuid import uuid4 
 from models import  User, EmergencyContact, EventLog, Routine, ActionLog, SystemStatus
 import schemas
+import cv2
 from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,SystemStatusCreate, SystemStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse, DailyStatsResponse, EmergencyContactUpdate
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -298,12 +299,39 @@ def create_system_status(system: SystemStatusCreate, db: Session = Depends(get_d
     db.refresh(new_system)
     return new_system
 
-@app.get("/system-statuses/event/{event_id}", response_model=list[SystemStatusResponse])
-def get_system_statuses(event_id: int, db: Session = Depends(get_db)):
-    systems = db.query(SystemStatus).filter(SystemStatus.event_id == event_id).all()
-    if not systems:
-        raise HTTPException(status_code=404, detail="시스템 상태 없음")
-    return systems
+# 실시간 시스템 상태 확인 
+@app.get("/system-statuses", response_model=list[SystemStatusResponse])
+def get_real_time_system_status():
+    statuses = []
+
+    # 1. 카메라 상태 확인
+    try:
+        cap = cv2.VideoCapture(0) #기본캠 0으로 1, 2, 3 변경가능
+        camera_ok = cap.isOpened()
+        cap.release()
+    except Exception:
+        camera_ok = False
+
+    statuses.append({
+        "node_name": "카메라",
+        "status": "정상" if camera_ok else "비정상"
+    })
+
+    # 2. 객체 감지 상태 임시
+    detection_ok = True 
+    statuses.append({
+        "node_name": "객체 감지",
+        "status": "정상" if detection_ok else "비정상"
+    })
+
+    # 3. 추적 상태 임시
+    tracking_ok = True  
+    statuses.append({
+        "node_name": "추적",
+        "status": "정상" if tracking_ok else "비정상"
+    })
+
+    return statuses
 
 #오늘의 통계
 @app.get("/stats/today", response_model=DailyStatsResponse)
