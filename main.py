@@ -198,8 +198,8 @@ def get_real_time_system_status():
         camera_ok = False
 
     statuses.append({"node_name": "카메라", "status": "정상" if camera_ok else "비정상"})
-    statuses.append({"node_name": "객체 감지", "status": "정상"})  # TODO: 연동 필요
-    statuses.append({"node_name": "추적", "status": "정상"})      # TODO: 연동 필요
+    statuses.append({"node_name": "객체 감지", "status": "정상"})  # True로 고정필요
+    statuses.append({"node_name": "추적", "status": "정상"})      # True로 고정필요
 
     return statuses
 
