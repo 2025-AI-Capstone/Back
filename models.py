@@ -70,3 +70,5 @@ class SystemStatus(Base):
     node_name = Column(String)
     status = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+###

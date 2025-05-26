@@ -146,7 +146,16 @@ def get_my_event_logs(db: Session = Depends(get_db), session_id: str = Cookie(No
 def create_routine(routine: schemas.RoutineCreate, db: Session = Depends(get_db), session_id: str = Cookie(None)):
     if session_id not in session_store:
         raise HTTPException(status_code=401, detail="Session invalid")
-    routine_obj = models.Routine(user_id=session_store[session_id], **routine.dict())
+    alarm_time_only = routine.alarm_time
+
+    routine_obj = models.Routine(
+        user_id=session_store[session_id],
+        title=routine.title,
+        description=routine.description,
+        alarm_time=alarm_time_only,
+        repeat_type=routine.repeat_type
+    )
+
     db.add(routine_obj)
     db.commit()
     db.refresh(routine_obj)

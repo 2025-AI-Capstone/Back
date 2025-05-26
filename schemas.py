@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, time
 
 #User
 class UserCreate(BaseModel):
@@ -71,11 +71,12 @@ class EventLogResponse(EventLogCreate):
 class RoutineCreate(BaseModel):
     title : str
     description : str
-    alarm_time : datetime
-    repear_type : str
+    alarm_time : time
+    repeat_type : str
 
 class RoutineResponse(RoutineCreate):
     id : int
+    created_at : datetime
 
     model_config = {
         "from_attributes": True
