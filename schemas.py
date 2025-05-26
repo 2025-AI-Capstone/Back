@@ -95,7 +95,7 @@ class ActionLogResponse(ActionLogCreate):
     model_config = {
         "from_attributes": True
     }
-#대화 
+
 
 #노드상태 => 시스템 상태 이름 변경
 class SystemStatusCreate(BaseModel):
