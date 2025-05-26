@@ -55,7 +55,6 @@ class EmergencyContactResponse(EmergencyContactCreate):
 
 #이벤트로그
 class EventLogCreate(BaseModel):
-    user_id: int
     event_type: str
     status: str
     confidence_score: float
@@ -70,7 +69,6 @@ class EventLogResponse(EventLogCreate):
 
 #루틴
 class RoutineCreate(BaseModel):
-    user_id : int
     title : str
     description : str
     alarm_time : datetime

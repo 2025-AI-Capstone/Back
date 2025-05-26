@@ -126,7 +126,7 @@ def get_my_contacts(
     session_id: str = Cookie(None)
 ):
     if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="세션이 만료되었거나 없습니다.")
+        raise HTTPException(status_code=401, detail="세션이 없습니다.")
     
     user_id = session_store[session_id]
     return db.query(EmergencyContact).filter(EmergencyContact.user_id == user_id).all()
@@ -188,9 +188,18 @@ def update_emergency_contact(
 
 # 이벤트 로그 
 @app.post("/event-logs", response_model=EventLogResponse)
-def create_event_log(event: EventLogCreate, db: Session = Depends(get_db)):
+def create_event_log(
+    event: EventLogCreate,
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="세션이 유효하지 않음")
+
+    user_id = session_store[session_id]
+
     new_log = EventLog(
-        user_id=event.user_id,
+        user_id=user_id,  # 쿠키(session)에서 id 사용
         event_type=event.event_type,
         status=event.status,
         confidence_score=event.confidence_score,
@@ -199,6 +208,19 @@ def create_event_log(event: EventLogCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_log)
     return new_log
+
+# 사용자 조회용 
+@app.get("/event-logs/me", response_model=list[EventLogResponse])
+def get_my_event_logs(
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="Error")
+    
+    user_id = session_store[session_id]
+    logs = db.query(EventLog).filter(EventLog.user_id == user_id).all()
+    return logs
 
 @app.get("/event-logs/user/{user_id}", response_model=list[EventLogResponse])
 def get_user_event_logs(user_id: int, db: Session = Depends(get_db)):
@@ -209,12 +231,39 @@ def get_user_event_logs(user_id: int, db: Session = Depends(get_db)):
 
 # 루틴
 @app.post("/routines", response_model=RoutineResponse)
-def create_routine(routine: RoutineCreate, db: Session = Depends(get_db)):
-    new_routine = Routine(**routine.model_dump())
+def create_routine(
+    routine: RoutineCreate,
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="세션이 유효하지 않음")
+
+    user_id = session_store[session_id]
+
+    new_routine = Routine(
+        user_id=user_id,
+        start_time=routine.start_time,
+        end_time=routine.end_time,
+        description=routine.description
+    )
     db.add(new_routine)
     db.commit()
     db.refresh(new_routine)
     return new_routine
+
+@app.get("/routines/me", response_model=list[RoutineResponse])
+def get_my_routines(
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="Error")
+
+    user_id = session_store[session_id]
+    routines = db.query(Routine).filter(Routine.user_id == user_id).all()
+    return routines
+
 
 @app.get("/routines/user/{user_id}", response_model=list[RoutineResponse])
 def get_user_routines(user_id: int, db: Session = Depends(get_db)):
