@@ -97,13 +97,12 @@ class ActionLogResponse(ActionLogCreate):
     }
 #대화 
 
-#노드상태
-class NodeStatusCreate(BaseModel):
-    event_id: int     # X 없앨예정
+#노드상태 => 시스템 상태 이름 변경
+class SystemStatusCreate(BaseModel):
     node_name: str
     status: str
 
-class NodeStatusResponse(NodeStatusCreate):
+class SystemStatusResponse(SystemStatusCreate):
     id: int
     timestamp: datetime
 

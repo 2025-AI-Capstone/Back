@@ -4,9 +4,9 @@ from sqlalchemy import func
 from datetime import datetime, time
 from database import  SessionLocal
 from uuid import uuid4 
-from models import  User, EmergencyContact, EventLog, Routine, ActionLog, NodeStatus
+from models import  User, EmergencyContact, EventLog, Routine, ActionLog, SystemStatus
 import schemas
-from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,NodeStatusCreate, NodeStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse, DailyStatsResponse, EmergencyContactUpdate
+from schemas import EventLogCreate, EventLogResponse,RoutineCreate, RoutineResponse, ActionLogCreate,ActionLogResponse,SystemStatusCreate, SystemStatusResponse, EmergencyContactCreate, EmergencyContactResponse, LoginRequest, LoginResponse, DailyStatsResponse, EmergencyContactUpdate
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -289,21 +289,21 @@ def get_action_logs(event_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="액션 로그 없음")
     return logs
 
-#노드 상태
-@app.post("/node-statuses", response_model=NodeStatusResponse)
-def create_node_status(node: NodeStatusCreate, db: Session = Depends(get_db)):
-    new_node = NodeStatus(**node.model_dump())
-    db.add(new_node)
+#시스템 상태
+@app.post("/system-statuses", response_model=SystemStatusResponse)
+def create_system_status(system: SystemStatusCreate, db: Session = Depends(get_db)):
+    new_system = SystemStatus(**system.model_dump())
+    db.add(new_system)
     db.commit()
-    db.refresh(new_node)
-    return new_node
+    db.refresh(new_system)
+    return new_system
 
-@app.get("/node-statuses/event/{event_id}", response_model=list[NodeStatusResponse])
-def get_node_statuses(event_id: int, db: Session = Depends(get_db)):
-    nodes = db.query(NodeStatus).filter(NodeStatus.event_id == event_id).all()
-    if not nodes:
-        raise HTTPException(status_code=404, detail="노드 상태 없음")
-    return nodes
+@app.get("/system-statuses/event/{event_id}", response_model=list[SystemStatusResponse])
+def get_system_statuses(event_id: int, db: Session = Depends(get_db)):
+    systems = db.query(SystemStatus).filter(SystemStatus.event_id == event_id).all()
+    if not systems:
+        raise HTTPException(status_code=404, detail="시스템 상태 없음")
+    return systems
 
 #오늘의 통계
 @app.get("/stats/today", response_model=DailyStatsResponse)

@@ -62,9 +62,9 @@ class ActionLog(Base):
     status = Column(String)
     
 
-#NodeStatus
-class NodeStatus(Base):
-    __tablename__ = "node_statuses"
+#NodeStatus -> SystemStatus
+class SystemStatus(Base):
+    __tablename__ = "system_statuses"
     id = Column(Integer, primary_key=True)
     event_id = Column(Integer)
     node_name = Column(String)
