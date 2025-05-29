@@ -242,7 +242,7 @@ def get_real_time_system_status():
         build_status(1, "객체 감지", "정상"),
         build_status(2, "추적", "정상")
     ]
-    
+
     return statuses
 
 
