@@ -222,7 +222,14 @@ def create_sample_system_status(db: Session = Depends(get_db)):
 def get_real_time_system_status():
     now = datetime.utcnow()
 
-    # 카메라 상태 확인
+    def build_status(id: int, node_name: str, status: str):
+        return schemas.SystemStatusResponse(
+            id=id,
+            node_name=node_name,
+            status=status,
+            timestamp=now
+        )
+
     try:
         cap = cv2.VideoCapture(0)
         camera_ok = cap.isOpened()
@@ -231,26 +238,13 @@ def get_real_time_system_status():
         camera_ok = False
 
     statuses = [
-        {
-            "id": 0,
-            "node_name": "카메라",
-            "status": "정상" if camera_ok else "비정상",
-            "timestamp": now
-        },
-        {
-            "id": 1,
-            "node_name": "객체 감지",
-            "status": "정상",  
-            "timestamp": now
-        },
-        {
-            "id": 2,
-            "node_name": "추적",
-            "status": "정상",  
-            "timestamp": now
-        }
+        build_status(0, "카메라", "정상" if camera_ok else "비정상"),
+        build_status(1, "객체 감지", "정상"),
+        build_status(2, "추적", "정상")
     ]
+    
     return statuses
+
 
 
 # ────────────── 오늘의 통계 ──────────────
