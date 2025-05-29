@@ -99,6 +99,11 @@ class ActionLogResponse(ActionLogCreate):
 
 
 #노드상태 => 시스템 상태 이름 변경
+class SystemStatus(BaseModel):
+    node_name: str
+    status: str
+
+
 class SystemStatusCreate(BaseModel):
     node_name: str
     status: str

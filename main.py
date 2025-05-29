@@ -5,11 +5,16 @@ from sqlalchemy import func
 from datetime import datetime, time
 from uuid import uuid4 
 import cv2
+from datetime import datetime
 
 #내부모듈
 import models
 import schemas
-from database import  SessionLocal
+from database import  SessionLocal, engine
+from models import Base
+
+
+Base.metadata.create_all(bind=engine)
 
 # 세션 저장소
 session_store = {}
@@ -187,18 +192,37 @@ def get_action_logs(event_id: int, db: Session = Depends(get_db)):
 #시스템 상태
 @app.post("/system-statuses", response_model=schemas.SystemStatusResponse)
 def create_system_status(system: schemas.SystemStatusCreate, db: Session = Depends(get_db)):
-    new_system = schemas.SystemStatus(**system.model_dump())
+    new_system = models.SystemStatus(**system.model_dump())
     db.add(new_system)
     db.commit()
     db.refresh(new_system)
     return new_system
 
+# 샘플 테스트용 
+@app.post("/test-system-status")
+def create_sample_system_status(db: Session = Depends(get_db)):
+    sample_data = [
+        models.SystemStatus(
+            event_id=1,
+            node_name="Camera",
+            status="Active"
+        ),
+        models.SystemStatus(
+            event_id=1,
+            node_name="Detection",
+            status="Running"
+        )
+    ]
+    db.add_all(sample_data)
+    db.commit()
+    return {"message": "샘플 시스템 상태 데이터"}
+
 # ────────────── 시스템 상태 (실시간 확인) ──────────────
 @app.get("/system-statuses", response_model=list[schemas.SystemStatusResponse])
 def get_real_time_system_status():
-    statuses = []
+    now = datetime.utcnow()
 
-    # 1. 카메라 확인
+    # 카메라 상태 확인
     try:
         cap = cv2.VideoCapture(0)
         camera_ok = cap.isOpened()
@@ -206,11 +230,28 @@ def get_real_time_system_status():
     except Exception:
         camera_ok = False
 
-    statuses.append({"node_name": "카메라", "status": "정상" if camera_ok else "비정상"})
-    statuses.append({"node_name": "객체 감지", "status": "정상"})  # True로 고정필요
-    statuses.append({"node_name": "추적", "status": "정상"})      # True로 고정필요
-
+    statuses = [
+        {
+            "id": 0,
+            "node_name": "카메라",
+            "status": "정상" if camera_ok else "비정상",
+            "timestamp": now
+        },
+        {
+            "id": 1,
+            "node_name": "객체 감지",
+            "status": "정상",  
+            "timestamp": now
+        },
+        {
+            "id": 2,
+            "node_name": "추적",
+            "status": "정상",  
+            "timestamp": now
+        }
+    ]
     return statuses
+
 
 # ────────────── 오늘의 통계 ──────────────
 @app.get("/stats/today", response_model=schemas.DailyStatsResponse)
