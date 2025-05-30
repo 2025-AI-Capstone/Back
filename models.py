@@ -35,10 +35,11 @@ class EventLog(Base):
     __tablename__ = "event_logs"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer)
-    event_type = Column(String)
-    status = Column(String)
+    event_type = Column(String)  
+    status = Column(String)     
     confidence_score = Column(Float)
     detected_at = Column(DateTime, default=datetime.utcnow)
+    message = Column(String, nullable=True)  # 텍스트 저장
 
 #Routine
 class Routine(Base):
@@ -59,8 +60,8 @@ class ActionLog(Base):
     action_type = Column(String)
     triggered_by = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    status = Column(String)
-    
+    status = Column(Float)  #추적 시간 숫자로 저장해서 sum 
+     
 
 #NodeStatus -> SystemStatus
 class SystemStatus(Base):

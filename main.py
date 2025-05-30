@@ -14,7 +14,6 @@ from database import  SessionLocal, engine
 from models import Base
 
 
-Base.metadata.create_all(bind=engine)
 
 # 세션 저장소
 session_store = {}
@@ -146,6 +145,17 @@ def get_my_event_logs(db: Session = Depends(get_db), session_id: str = Cookie(No
         raise HTTPException(status_code=401, detail="Session invalid")
     return db.query(models.EventLog).filter(models.EventLog.user_id == session_store[session_id]).all()
 
+#채팅 로그만 보고싶을때
+@app.get("/event-logs/chat", response_model=list[schemas.EventLogResponse])
+def get_chat_logs(db: Session = Depends(get_db), session_id: str = Cookie(None)):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="Session invalid")
+    return db.query(models.EventLog).filter(
+        models.EventLog.user_id == session_store[session_id],
+        models.EventLog.message.isnot(None)
+    ).all()
+
+
 # ────────────── 루틴 ──────────────
 @app.post("/routines", response_model=schemas.RoutineResponse)
 def create_routine(routine: schemas.RoutineCreate, db: Session = Depends(get_db), session_id: str = Cookie(None)):
@@ -171,7 +181,6 @@ def get_my_routines(db: Session = Depends(get_db), session_id: str = Cookie(None
     if session_id not in session_store:
         raise HTTPException(status_code=401, detail="Session invalid")
     return db.query(models.Routine).filter(models.Routine.user_id == session_store[session_id]).all()
-    return routines
 
 # ────────────── 액션 로그 ──────────────
 @app.post("/action-logs", response_model=schemas.ActionLogResponse)
@@ -268,11 +277,30 @@ def get_today_stats(db: Session = Depends(get_db)):
         models.Routine.created_at <= end
     ).scalar()
 
+    #오늘 감지된 객체 수
+    object_detection_count = db.query(func.count(models.ActionLog.id)).filter(
+        models.ActionLog.action_type == "object_detected",
+        models.ActionLog.timestamp >= start,
+        models.ActionLog.timestamp <= end
+    ).scalar()
+
+    #추적 시간
+    total_tracking_seconds = db.query(func.sum(models.ActionLog.status)).filter(
+        models.ActionLog.action_type == "tracking_time",
+        models.ActionLog.timestamp >= start,
+        models.ActionLog.timestamp <= end
+    ).scalar() or 0
+
+    tracking_time_hour = round(total_tracking_seconds / 3600, 2)
+
     return schemas.DailyStatsResponse(
         date=today,
         fall_event_count=fall_count,
         average_confidence_score=round(avg_confidence, 2) if avg_confidence else 0.0,
-        routine_count=routine_count
+        routine_count=routine_count,
+        object_detection_count=object_detection_count,
+        tracking_time_hour=tracking_time_hour
     )
+
 
 #──────────────────────────────────────────────────────────────────────

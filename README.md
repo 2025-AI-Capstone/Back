@@ -7,14 +7,13 @@
 ## 프로젝트 구성
 
 | 기능 모듈        | 설명 |
-|------------------|------|
 | 사용자(User)        | 사용자 등록 및 조회 |
-| 이벤트 로그(EventLog) | 낙상/이상행동 등 이벤트 기록 |
+| 로그인(login)       | 로그인 |
+| 이벤트 로그(EventLog)| 낙상/이상행동 등 이벤트 기록 |
 | 루틴(Routine)       | 정해진 시간의 일상 알림 등록 (예: 복약, 운동) |
-| 액션 로그(ActionLog) | 슬랙 등 외부 알림 수행 기록 |
-| 노드 상태(NodeStatus) | 센서 등의 상태 기록 |
-
-
+| 액션 로그(ActionLog) | 외부 알림 수행 기록 |
+| 시스템 상태(SystemStatus) | 카메라, 객체감지, 추적 상태 확인 |
+| 오늘의 통계(stats/today) | 날짜, 쓰러짐 횟수, 정확도, 루틴수 조회|
 #25myproject
  main.py # 서버 실행 진입점
  models.py # SQLAlchemy ORM 모델 정의
@@ -24,9 +23,14 @@
  requirements.txt # 의존성 패키지 목록
  alembic # 마이그레이션 폴더
  alembic/versions # 마이그레이션 히스토리
-
-
 ---
+
+eventlog
+-> event_type : 이벤트 발생시 이벤트의 종류 
+actionlog type
+routinelog type
+
+systemStatus  작동 비작동
 
 ##  실행 방법
 
@@ -43,5 +47,5 @@ alembic upgrade head
 # 서버 실행
 uvicorn main:app --reload
 
-#확인용
+#Swagger문서 등록 조회 링크
 http://127.0.0.1:8000/docs   # Swagger 문서 

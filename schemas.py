@@ -58,6 +58,7 @@ class EventLogCreate(BaseModel):
     event_type: str
     status: str
     confidence_score: float
+    message: Optional[str] = None  # 메시지 추가
 
 class EventLogResponse(EventLogCreate):
     id: int
@@ -87,7 +88,7 @@ class ActionLogCreate(BaseModel):
     event_id: int
     action_type: str
     triggered_by: str
-    status : str
+    status : float
 
 class ActionLogResponse(ActionLogCreate):
     id: int
@@ -122,3 +123,5 @@ class DailyStatsResponse(BaseModel):
     fall_event_count: int           # 쓰러짐 개수
     average_confidence_score: float = 0.0  # 기본값 0.0 
     routine_count: int              # 루틴 개수
+    object_detection_count: int            # 객체감지 수 추가
+    tracking_time_hour: float              # 총 추적시간 추가
