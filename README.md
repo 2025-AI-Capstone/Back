@@ -40,8 +40,8 @@
 
 ## 이벤트 로그 (EventLog)
 
-- `POST /event-logs` : 이벤트 기록 (낙상, 이상행동 등)
-  - `event_type`: `"fall"`, `"abnormal_behavior"` 등
+- `POST /event-logs` : 이벤트 기록 (쓰러짐, 이상행동 등)
+  - `event_type`: `"fall"` 등
   - `status`: `"detected"` 등 상태 문자열
   - `confidence_score`: 감지 신뢰도 (0.0 ~ 1.0)
   - `message`: (선택) 텍스트 메시지 (STT 결과 등)
@@ -74,7 +74,7 @@
 
 - `GET /stats/today`
   - `date`: 오늘 날짜
-  - `fall_event_count`: 낙상 감지 수
+  - `fall_event_count`: 쓰러짐 감지 수
   - `average_confidence_score`: 평균 신뢰도
   - `routine_count`: 등록된 루틴 수
   - `object_detection_count`: 객체 감지 횟수
