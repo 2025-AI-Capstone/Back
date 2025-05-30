@@ -238,9 +238,9 @@ def get_real_time_system_status():
         camera_ok = False
 
     statuses = [
-        build_status(0, "카메라", "정상" if camera_ok else "비정상"),
-        build_status(1, "객체 감지", "정상"), #정상으로 함 
-        build_status(2, "추적", "정상")      #정상으로 함
+        build_status(0, "카메라", "작동" if camera_ok else "비작동"),
+        build_status(1, "객체 감지", "작동"), #정상으로 함 
+        build_status(2, "추적", "작동")      #정상으로 함
     ]
 
     return statuses
