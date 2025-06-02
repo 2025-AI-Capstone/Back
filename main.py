@@ -133,10 +133,42 @@ def delete_emergency_contact(contact_id: int, db: Session = Depends(get_db), ses
 def create_event_log(event: schemas.EventLogCreate, db: Session = Depends(get_db), session_id: str = Cookie(None)):
     if session_id not in session_store:
         raise HTTPException(status_code=401, detail="Session invalid")
+
+    # 이벤트 로그 저장
     log = models.EventLog(user_id=session_store[session_id], **event.dict())
     db.add(log)
     db.commit()
     db.refresh(log)
+
+    # 특정 이벤트일 경우 ActionLog 자동 추가
+    action_logs = []
+
+    if log.event_type == "fall":
+        action_logs.append(models.ActionLog(
+            event_id=log.id,
+            action_type="object_detected",
+            triggered_by="system",
+            status=1.0
+        ))
+        action_logs.append(models.ActionLog(
+            event_id=log.id,
+            action_type="tracking_time",
+            triggered_by="system",
+            status=300.0  #  추적 시간 5분
+        ))
+
+    if log.event_type == "tracking":
+        action_logs.append(models.ActionLog(
+            event_id=log.id,
+            action_type="tracking_time",
+            triggered_by="system",
+            status=180.0  # 3분
+        ))
+
+    if action_logs:
+        db.add_all(action_logs)
+        db.commit()
+
     return log
 
 @app.get("/event-logs/me", response_model=list[schemas.EventLogResponse])
