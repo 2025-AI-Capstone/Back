@@ -1,44 +1,54 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import HTTPException, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import List
 
-app = FastAPI()
+import models
+from database import get_db
 
-# 사용자 요청
+# ────────────── 스키마 ──────────────
 class UserCreate(BaseModel):
-    name: str = Field(..., example="노경준", description="사용자 이름")
-    phone: str = Field(..., example="010-3771-5801", description="전화번호")
+    name: str = Field(..., example="홍길동", description="이름")
+    phone: str = Field(..., example="010-xxxx-xxxx", description="전화번호")
+    password: str = Field(..., example="1234", description="비밀번호")
 
-# 사용자 응답
+class UserUpdate(BaseModel):
+    name: str
+    phone: str
+    information: str
+
 class UserResponse(BaseModel):
     id: int
     name: str
     phone: str
     created_at: datetime
+    information: str
 
-# 저장소
-users = []
-user_id_counter = 1
+    class Config:
+        orm_mode = True
 
-# 사용자 등록 API
-@app.post("/users", response_model=UserResponse)
-async def create_user(user: UserCreate):
-    global user_id_counter
-    new_user = {
-        "id": user_id_counter,
-        "name": user.name,
-        "phone": user.phone,
-        "created_at": datetime.now()
-    }
-    users.append(new_user)
-    user_id_counter += 1
+# ────────────── 사용자 등록 ──────────────
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     return new_user
 
-# 사용자 ID로 조회 API
-@app.get("/users/{user_id}", response_model=UserResponse)
-async def get_user(user_id: int):
-    for user in users:
-        if user["id"] == user_id:
-            return user
-    raise HTTPException(status_code=404, detail="Error")
+# ────────────── 사용자 수정 ──────────────
+def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    for field, value in data.dict().items():
+        setattr(user, field, value)
+    db.commit()
+    db.refresh(user)
+    return user
+
+# ────────────── 사용자 단건 조회 ──────────────
+def get_user_detail(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

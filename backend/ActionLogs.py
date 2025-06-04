@@ -1,48 +1,47 @@
+from fastapi import HTTPException, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
 from typing import List
-from datetime import datetime
 
-app = FastAPI()
-#요청
+import models
+from database import get_db
+
+# ────────────── 스키마 정의 ──────────────
 class ActionLogCreate(BaseModel):
-    event_id: int = Field(..., description="관련된 이벤트 ID")
-    action_type: str = Field(..., example="slack", description="유형")
-    triggered_by: str = Field(..., example="AI agent", description="액션 주체")
+    event_id: int = Field(..., example=1, description="연결된 이벤트 ID")
+    action_type: str = Field(..., example="tracking_time", description="액션 유형")
+    triggered_by: str = Field(..., example="system", description="트리거 주체")
+    status: float = Field(..., example=180.0, description="값 (예: 추적 시간 180초 등)")
 
-#응답
 class ActionLogResponse(BaseModel):
     id: int
     event_id: int
     action_type: str
     triggered_by: str
     timestamp: datetime
+    status: float
 
-#저장소
-action_logs = []
-action_log_id_counter = 1
+    class Config:
+        orm_mode = True
 
-## api 구현
-# 등록 API
-@app.post("/action-logs", response_model=ActionLogResponse)
-async def create_action_log(action: ActionLogCreate):
-    global action_log_id_counter
-    entry = {
-        "id": action_log_id_counter,
-        "event_id": action.event_id,
-        "action_type": action.action_type,
-        "triggered_by": action.triggered_by,
-        "trimestamp": datetime.now()
-    }
-    action_logs.append(entry)
-    action_log_id_counter += 1
-    return entry
+# ────────────── 액션 로그 등록 ──────────────
+def create_action_log(
+    log: ActionLogCreate,
+    db: Session = Depends(get_db)
+):
+    action = models.ActionLog(**log.dict())
+    db.add(action)
+    db.commit()
+    db.refresh(action)
+    return action
 
-# 액션 로그 조회 API
-@app.get("/action-logs/event/{event_id}", response_model=List[ActionLogResponse])
-async def get_logs_by_event(event_id: int):
-    logs = [log for log in action_logs if log["event_id"] == event_id]
+# ────────────── 특정 이벤트에 대한 액션 로그 조회 ──────────────
+def get_action_logs(
+    event_id: int,
+    db: Session = Depends(get_db)
+) -> List[ActionLogResponse]:
+    logs = db.query(models.ActionLog).filter(models.ActionLog.event_id == event_id).all()
     if not logs:
-        raise HTTPException(status_code=404, detail="Error")
+        raise HTTPException(status_code=404, detail="액션 로그 없음")
     return logs

@@ -1,19 +1,22 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import HTTPException, Depends, Cookie
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 from datetime import datetime, time
 from typing import List
 
-app = FastAPI()
+import models
+from database import get_db
 
-#  요청
+# ────────────── 세션 저장소 ──────────────
+session_store = {}
+
+# ────────────── 스키마 정의 ──────────────
 class RoutineCreate(BaseModel):
-    user_id: int = Field(..., example=1, description="루틴을 등록할 사용자 ID")
-    title: str = Field(..., example="복약 알림", description="루틴 제목")
-    description: str = Field(..., example="매일 아침 9시에 약 복용", description="루틴 설명")
-    alarm_time: time = Field(..., example="09:00:00", description="알람 시간")
-    repeat_type: str = Field(..., example="daily", description="반복 주기 (daily)")
+    title: str = Field(..., example="아침 약 복용", description="루틴 제목")
+    description: str = Field(..., example="혈압약 복용", description="루틴 설명")
+    alarm_time: time = Field(..., example="08:00:00", description="알람 시간")
+    repeat_type: str = Field(..., example="daily", description="반복 주기")
 
-# 응답
 class RoutineResponse(BaseModel):
     id: int
     user_id: int
@@ -21,53 +24,41 @@ class RoutineResponse(BaseModel):
     description: str
     alarm_time: time
     repeat_type: str
-##여기까진 그냥 루틴 등록만 된 상태
+    created_at: datetime
 
-# 알람 스케줄 (scheduler)
-from apscheduler.schedulers.background import BackgroundScheduler
- 
-scheduler = BackgroundScheduler()
-scheduler.start()
-# 저장소
-routines = []
-routine_id_counter = 1
+    class Config:
+        orm_mode = True
 
-#루틴 실행 함수
-def execute_routine(routine_id: int, title: str, user_id: int):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 루틴 실행(ID {routine_id}) 사용자 {user_id} - {title}")
+# ────────────── 루틴 등록 ──────────────
+def create_routine(
+    routine: RoutineCreate,
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+):
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="Session invalid")
 
-#  등록 API
-@app.post("/routines", response_model=RoutineResponse)
-async def create_routine(routine: RoutineCreate):
-    global routine_id_counter
-    
-    new_routine = {
-        "id": routine_id_counter,
-        "user_id": routine.user_id,
-        "title": routine.title,
-        "description": routine.description,
-        "alarm_time": routine.alarm_time,
-        "repeat_type": routine.repeat_type
-    }
-    routines.append(new_routine)
-    # 알람 스케줄 등록
-    new_id = f"routine_{routine_id_counter}"
-    scheduler.add_job(
-        func=execute_routine,
-        trigger="cron",  #매일 반복 됨
-        id=new_id,
-        hour=routine.alarm_time.hour,
-        minute=routine.alarm_time.minute,
-        args=[routine_id_counter, routine.title, routine.user_id],
-        replace_existing=False
+    alarm_time_only = routine.alarm_time
+
+    routine_obj = models.Routine(
+        user_id=session_store[session_id],
+        title=routine.title,
+        description=routine.description,
+        alarm_time=alarm_time_only,
+        repeat_type=routine.repeat_type
     )
-    routine_id_counter += 1
-    return new_routine
 
-# 사용자별 조회 API
-@app.get("/routines/user/{user_id}", response_model=List[RoutineResponse])
-async def get_user_routines(user_id: int):
-    user_routines = [r for r in routines if r["user_id"] == user_id]
-    if not user_routines:
-        raise HTTPException(status_code=404, detail="Error")
-    return user_routines
+    db.add(routine_obj)
+    db.commit()
+    db.refresh(routine_obj)
+    return routine_obj
+
+# ────────────── 내 루틴 목록 조회 ──────────────
+def get_my_routines(
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+) -> List[RoutineResponse]:
+    if session_id not in session_store:
+        raise HTTPException(status_code=401, detail="Session invalid")
+
+    return db.query(models.Routine).filter(models.Routine.user_id == session_store[session_id]).all()
