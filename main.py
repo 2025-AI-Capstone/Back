@@ -260,31 +260,10 @@ def create_sample_system_status(db: Session = Depends(get_db)):
 
 # ────────────── 시스템 상태 (실시간 확인) ──────────────
 @app.get("/system-statuses", response_model=list[schemas.SystemStatusResponse])
-def get_real_time_system_status():
-    now = datetime.utcnow()
-
-    def build_status(id: int, node_name: str, status: str):
-        return schemas.SystemStatusResponse(
-            id=id,
-            node_name=node_name,
-            status=status,
-            timestamp=now
-        )
-
-    try:
-        cap = cv2.VideoCapture(0)
-        camera_ok = cap.isOpened()
-        cap.release()
-    except Exception:
-        camera_ok = False
-
-    statuses = [
-        build_status(0, "카메라", "작동" if camera_ok else "비작동"),
-        build_status(1, "객체 감지", "작동"), #정상으로 함 
-        build_status(2, "추적", "작동")      #정상으로 함
-    ]
-
-    return statuses
+def get_system_statuses(db: Session = Depends(get_db)):
+    """데이터베이스에서 시스템 상태를 조회"""
+    system_statuses = db.query(models.SystemStatus).all()
+    return system_statuses
 
 
 
