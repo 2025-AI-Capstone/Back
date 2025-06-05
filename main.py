@@ -288,30 +288,11 @@ def get_today_stats(db: Session = Depends(get_db)):
         models.Routine.created_at <= end
     ).scalar()
 
-    #오늘 감지된 객체 수
-    object_detection_count = db.query(func.count(models.ActionLog.id)).filter(
-        models.ActionLog.action_type == "object_detected",
-        models.ActionLog.timestamp >= start,
-        models.ActionLog.timestamp <= end
-    ).scalar()
-
-    #추적 시간
-    total_tracking_seconds = db.query(func.sum(models.ActionLog.status)).filter(
-        models.ActionLog.action_type == "tracking_time",
-        models.ActionLog.timestamp >= start,
-        models.ActionLog.timestamp <= end
-    ).scalar() or 0
-
-    tracking_time_hour = round(total_tracking_seconds / 3600, 2)
-
     return schemas.DailyStatsResponse(
         date=today,
         fall_event_count=fall_count,
         average_confidence_score=round(avg_confidence, 2) if avg_confidence else 0.0,
         routine_count=routine_count,
-        object_detection_count=object_detection_count,
-        tracking_time_hour=tracking_time_hour
     )
 
 
-#──────────────────────────────────────────────────────────────────────
