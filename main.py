@@ -1,298 +1,35 @@
-from fastapi import FastAPI, Depends, Cookie, Response, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from datetime import datetime, time
-from uuid import uuid4 
-import cv2
-from datetime import datetime
+from database import init_db
+from core.session import session_store
+from routers import (
+    auth,
+    users,
+    emergency,
+    events,
+    routines,
+    system,
+    stats
+)
 
-#내부모듈
-import models
-import schemas
-from database import  SessionLocal, engine
-from models import Base
-
-
-
-# 세션 저장소
-session_store = {}
+init_db()
 
 app = FastAPI()
 
-# DB 세션
-def get_db():  
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# 도메인(CORS설정)
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # origin 허용
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],       
+    allow_headers=["*"],
 )
 
-# ────────────── 로그인 ──────────────
-@app.post("/login", response_model=schemas.LoginResponse)
-def login(request: schemas.LoginRequest, response: Response,db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.name == request.name).first()
-    if not user or user.password != request.password:
-        raise HTTPException(status_code=401, detail="잘못된 로그인 정보입니다.")
-    session_id = str(uuid4())
-    session_store[session_id] = user.id
-    response.set_cookie(key="session_id", value=session_id, httponly=True)
-    return {"message": "로그인 성공", "user_id": user.id}
-
-@app.get("/api/user")
-def get_user(session_id: str = Cookie(None)):
-    if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="Session invalid or expired")
-    return {"user_id": session_store[session_id]}
-
-# ────────────── 사용자 ──────────────
-@app.post("/users", response_model=schemas.UserResponse)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    new_user = models.User(**user.dict())
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
-
-#수정 구현
-@app.put("/users/{user_id}", response_model=schemas.UserResponse)
-def update_user(user_id: int, data: schemas.UserUpdate, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    for field, value in data.dict().items():
-        setattr(user, field, value)
-    db.commit()
-    db.refresh(user)
-    return user
-
-
-@app.get("/users/{user_id}", response_model=schemas.UserResponse)
-def get_user_detail(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
-
-# ────────────── 긴급 연락처 ──────────────
-@app.post("/emergency-contacts", response_model=schemas.EmergencyContactResponse)
-def create_emergency_contact(data: schemas.EmergencyContactCreate, db: Session = Depends(get_db), session_id: str = Cookie(None)):
-    if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    contact = models.EmergencyContact(user_id=session_store[session_id], **data.dict())
-    db.add(contact)
-    db.commit()
-    db.refresh(contact)
-    return contact
-
-#조회
-@app.get("/emergency-contacts/me", response_model=list[schemas.EmergencyContactResponse])
-def get_my_contacts(db: Session = Depends(get_db), session_id: str = Cookie(None)):
-    if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    return db.query(models.EmergencyContact).filter(models.EmergencyContact.user_id == session_store[session_id]).all()
-
-#수정
-@app.put("/emergency-contacts/{contact_id}", response_model=schemas.EmergencyContactResponse)
-def update_emergency_contact(contact_id: int, data: schemas.EmergencyContactUpdate, db: Session = Depends(get_db), session_id: str = Cookie(None)):
-    if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    contact = db.query(models.EmergencyContact).filter(models.EmergencyContact.id == contact_id, models.EmergencyContact.user_id == session_store[session_id]).first()
-    if not contact:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    for field, value in data.dict().items():
-        setattr(contact, field, value)
-    db.commit()
-    db.refresh(contact)
-    return contact
-#삭제
-@app.delete("/emergency-contacts/{contact_id}")
-def delete_emergency_contact(contact_id: int, db: Session = Depends(get_db), session_id: str = Cookie(None)):
-    if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    contact = db.query(models.EmergencyContact).filter(models.EmergencyContact.id == contact_id, models.EmergencyContact.user_id == session_store[session_id]).first()
-    if not contact:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    db.delete(contact)
-    db.commit()
-    return {"message": "삭제 완료"}
-
-
-
-# ────────────── 이벤트 로그 ──────────────
-@app.post("/event-logs", response_model=schemas.EventLogResponse)
-def create_event_log(event: schemas.EventLogCreate, db: Session = Depends(get_db), session_id: str = Cookie(None)):
-    if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="Session invalid")
-
-    # 이벤트 로그 저장
-    log = models.EventLog(user_id=session_store[session_id], **event.dict())
-    db.add(log)
-    db.commit()
-    db.refresh(log)
-
-    # 특정 이벤트일 경우 ActionLog 자동 추가
-    action_logs = []
-
-    if log.event_type == "fall":
-        action_logs.append(models.ActionLog(
-            event_id=log.id,
-            action_type="object_detected",
-            triggered_by="system",
-            status=1.0
-        ))
-        action_logs.append(models.ActionLog(
-            event_id=log.id,
-            action_type="tracking_time",
-            triggered_by="system",
-            status=300.0  #  추적 시간 5분
-        ))
-
-    if log.event_type == "tracking":
-        action_logs.append(models.ActionLog(
-            event_id=log.id,
-            action_type="tracking_time",
-            triggered_by="system",
-            status=180.0  # 3분
-        ))
-
-    if action_logs:
-        db.add_all(action_logs)
-        db.commit()
-
-    return log
-
-@app.get("/event-logs/me", response_model=list[schemas.EventLogResponse])
-def get_my_event_logs(db: Session = Depends(get_db), session_id: str = Cookie(None)):
-    if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    return db.query(models.EventLog).filter(models.EventLog.user_id == session_store[session_id]).all()
-
-#채팅 로그만 보고싶을때
-@app.get("/event-logs/chat", response_model=list[schemas.EventLogResponse])
-def get_chat_logs(db: Session = Depends(get_db), session_id: str = Cookie(None)):
-    if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    return db.query(models.EventLog).filter(
-        models.EventLog.user_id == session_store[session_id],
-        models.EventLog.message.isnot(None)
-    ).all()
-
-
-# ────────────── 루틴 ──────────────
-@app.post("/routines", response_model=schemas.RoutineResponse)
-def create_routine(routine: schemas.RoutineCreate, db: Session = Depends(get_db), session_id: str = Cookie(None)):
-    if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    alarm_time_only = routine.alarm_time
-
-    routine_obj = models.Routine(
-        user_id=session_store[session_id],
-        title=routine.title,
-        description=routine.description,
-        alarm_time=alarm_time_only,
-        repeat_type=routine.repeat_type
-    )
-
-    db.add(routine_obj)
-    db.commit()
-    db.refresh(routine_obj)
-    return routine_obj
-
-@app.get("/routines/me", response_model=list[schemas.RoutineResponse])
-def get_my_routines(db: Session = Depends(get_db), session_id: str = Cookie(None)):
-    if session_id not in session_store:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    return db.query(models.Routine).filter(models.Routine.user_id == session_store[session_id]).all()
-
-# ────────────── 액션 로그 ──────────────
-@app.post("/action-logs", response_model=schemas.ActionLogResponse)
-def create_action_log(log: schemas.ActionLogCreate, db: Session = Depends(get_db)):
-    action = models.ActionLog(**log.dict())
-    db.add(action)
-    db.commit()
-    db.refresh(action)
-    return action
-
-@app.get("/action-logs/event/{event_id}", response_model=list[schemas.ActionLogResponse])
-def get_action_logs(event_id: int, db: Session = Depends(get_db)):
-    logs = db.query(models.ActionLog).filter(models.ActionLog.event_id == event_id).all()
-    if not logs:
-        raise HTTPException(status_code=404, detail="액션 로그 없음")
-    return logs
-
-#시스템 상태
-@app.post("/system-statuses", response_model=schemas.SystemStatusResponse)
-def create_system_status(system: schemas.SystemStatusCreate, db: Session = Depends(get_db)):
-    new_system = models.SystemStatus(**system.model_dump())
-    db.add(new_system)
-    db.commit()
-    db.refresh(new_system)
-    return new_system
-
-# 샘플 테스트용 
-@app.post("/test-system-status")
-def create_sample_system_status(db: Session = Depends(get_db)):
-    sample_data = [
-        models.SystemStatus(
-            event_id=1,
-            node_name="Camera",
-            status="Active"
-        ),
-        models.SystemStatus(
-            event_id=1,
-            node_name="Detection",
-            status="Running"
-        )
-    ]
-    db.add_all(sample_data)
-    db.commit()
-    return {"message": "샘플 시스템 상태 데이터"}
-
-# ────────────── 시스템 상태 (실시간 확인) ──────────────
-@app.get("/system-statuses", response_model=list[schemas.SystemStatusResponse])
-def get_system_statuses(db: Session = Depends(get_db)):
-    """데이터베이스에서 시스템 상태를 조회"""
-    system_statuses = db.query(models.SystemStatus).all()
-    return system_statuses
-
-
-
-# ────────────── 오늘의 통계 ──────────────
-@app.get("/stats/today", response_model=schemas.DailyStatsResponse)
-def get_today_stats(db: Session = Depends(get_db)):
-    today = datetime.now().date()
-    start = datetime.combine(today, time.min)
-    end = datetime.combine(today, time.max)
-
-    fall_count, avg_confidence = db.query(
-        func.count(models.EventLog.id),
-        func.avg(models.EventLog.confidence_score)
-    ).filter(
-        models.EventLog.event_type == "fall",
-        models.EventLog.detected_at >= start,
-        models.EventLog.detected_at <= end
-    ).first()
-
-    routine_count = db.query(func.count(models.Routine.id)).filter(
-        models.Routine.created_at >= start,
-        models.Routine.created_at <= end
-    ).scalar()
-
-    return schemas.DailyStatsResponse(
-        date=today,
-        fall_event_count=fall_count,
-        average_confidence_score=round(avg_confidence, 2) if avg_confidence else 0.0,
-        routine_count=routine_count,
-    )
-
-
+# 라우터 등록
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(emergency.router)
+app.include_router(events.router)
+app.include_router(routines.router)
+app.include_router(system.router)
+app.include_router(stats.router)

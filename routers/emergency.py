@@ -1,84 +1,62 @@
-from fastapi import HTTPException, Depends, Cookie
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, Cookie
 from sqlalchemy.orm import Session
-
-import models
+import models, schemas
 from database import get_db
+from main import session_store
 
-session_store = {}
+router = APIRouter()
 
-# ────────────── 스키마 정의 ──────────────
-class EmergencyContactCreate(BaseModel):
-    name: str = Field(..., example="아빠", description="연락처 이름")
-    phone: str = Field(..., example="010-xxxx-xxx5", description="전화번호")
-    relation: str = Field(..., example="아빠빠", description="관계")
-
-class EmergencyContactUpdate(BaseModel):
-    name: str
-    phone: str
-    relation: str
-
-class EmergencyContactResponse(BaseModel):
-    id: int
-    name: str
-    phone: str
-    relation: str
-
-    class Config:
-        orm_mode = True
-
-# ────────────── 등록 ──────────────
+# ────────────── 긴급 연락처 생성 ──────────────
+@router.post("/emergency-contacts", response_model=schemas.EmergencyContactResponse)
 def create_emergency_contact(
-    data: EmergencyContactCreate,
+    data: schemas.EmergencyContactCreate,
     db: Session = Depends(get_db),
     session_id: str = Cookie(None)
 ):
     if session_id not in session_store:
         raise HTTPException(status_code=401, detail="Session invalid")
-    
     contact = models.EmergencyContact(user_id=session_store[session_id], **data.dict())
     db.add(contact)
     db.commit()
     db.refresh(contact)
     return contact
 
-# ────────────── 내 연락처 조회 ──────────────
+# ────────────── 긴급 연락처 조회 ──────────────
+@router.get("/emergency-contacts/me", response_model=list[schemas.EmergencyContactResponse])
 def get_my_contacts(
     db: Session = Depends(get_db),
     session_id: str = Cookie(None)
 ):
     if session_id not in session_store:
         raise HTTPException(status_code=401, detail="Session invalid")
-
     return db.query(models.EmergencyContact).filter(
         models.EmergencyContact.user_id == session_store[session_id]
     ).all()
 
-# ────────────── 수정 ──────────────
+# ────────────── 긴급 연락처 수정 ──────────────
+@router.put("/emergency-contacts/{contact_id}", response_model=schemas.EmergencyContactResponse)
 def update_emergency_contact(
     contact_id: int,
-    data: EmergencyContactUpdate,
+    data: schemas.EmergencyContactUpdate,
     db: Session = Depends(get_db),
     session_id: str = Cookie(None)
 ):
     if session_id not in session_store:
         raise HTTPException(status_code=401, detail="Session invalid")
-
     contact = db.query(models.EmergencyContact).filter(
         models.EmergencyContact.id == contact_id,
         models.EmergencyContact.user_id == session_store[session_id]
     ).first()
-
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
-
     for field, value in data.dict().items():
         setattr(contact, field, value)
     db.commit()
     db.refresh(contact)
     return contact
 
-# ────────────── 삭제 ──────────────
+# ────────────── 긴급 연락처 삭제 ──────────────
+@router.delete("/emergency-contacts/{contact_id}")
 def delete_emergency_contact(
     contact_id: int,
     db: Session = Depends(get_db),
@@ -86,15 +64,12 @@ def delete_emergency_contact(
 ):
     if session_id not in session_store:
         raise HTTPException(status_code=401, detail="Session invalid")
-
     contact = db.query(models.EmergencyContact).filter(
         models.EmergencyContact.id == contact_id,
         models.EmergencyContact.user_id == session_store[session_id]
     ).first()
-
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
-
     db.delete(contact)
     db.commit()
     return {"message": "삭제 완료"}
