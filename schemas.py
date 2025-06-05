@@ -123,5 +123,3 @@ class DailyStatsResponse(BaseModel):
     fall_event_count: int           # 쓰러짐 개수
     average_confidence_score: float = 0.0  # 기본값 0.0 
     routine_count: int              # 루틴 개수
-    object_detection_count: int            # 객체감지 수 추가
-    tracking_time_hour: float              # 총 추적시간 추가
