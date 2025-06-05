@@ -6,6 +6,7 @@ from database import get_db
 
 router = APIRouter()
 
+#사용자 등록
 @router.post("/users", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     new_user = models.User(**user.dict())
@@ -13,7 +14,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
-
+#수정
 @router.put("/users/{user_id}", response_model=schemas.UserResponse)
 def update_user(user_id: int, data: schemas.UserUpdate, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -24,7 +25,7 @@ def update_user(user_id: int, data: schemas.UserUpdate, db: Session = Depends(ge
     db.commit()
     db.refresh(user)
     return user
-
+#조회
 @router.get("/users/{user_id}", response_model=schemas.UserResponse)
 def get_user_detail(user_id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()

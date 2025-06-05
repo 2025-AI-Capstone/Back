@@ -12,9 +12,9 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
-    password = Column(String, nullable=False)  # 로그인 구현현
+    password = Column(String, nullable=False)  
     created_at = Column(DateTime, default=datetime.utcnow)
-    information = Column(String, default="")  # # 정보 구현
+    information = Column(String, default="")  
 
 
 #모델
@@ -50,7 +50,7 @@ class Routine(Base):
     description = Column(String)
     alarm_time = Column(Time)
     repeat_type = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)  # 오늘의 통계 추가
+    created_at = Column(DateTime, default=datetime.utcnow)  
     
 #ActionLog
 class ActionLog(Base):
@@ -60,10 +60,10 @@ class ActionLog(Base):
     action_type = Column(String)
     triggered_by = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    status = Column(Float)  #추적 시간 숫자로 저장해서 sum 
+    status = Column(Float)   
      
 
-#NodeStatus -> SystemStatus
+#SystemStatus
 class SystemStatus(Base):
     __tablename__ = "system_statuses"
     id = Column(Integer, primary_key=True)

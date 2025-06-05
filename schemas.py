@@ -6,7 +6,7 @@ from datetime import datetime, time
 class UserCreate(BaseModel):
     name: str
     phone: str
-    password: str  # 로그인 구현 패스워드드
+    password: str  
 
 # 수정 코드 구현현
 class UserUpdate(BaseModel):
@@ -19,7 +19,7 @@ class UserResponse(BaseModel):
     name: str
     phone: str
     created_at: datetime
-    information: str  # 정보 필드 추가
+    information: str  
 
     model_config = {"from_attributes": True}
 
@@ -58,7 +58,7 @@ class EventLogCreate(BaseModel):
     event_type: str
     status: str
     confidence_score: float
-    message: Optional[str] = None  # 메시지 추가
+    message: Optional[str] = None  
 
 class EventLogResponse(EventLogCreate):
     id: int
@@ -99,10 +99,7 @@ class ActionLogResponse(ActionLogCreate):
     }
 
 
-#노드상태 => 시스템 상태 이름 변경
-class SystemStatus(BaseModel):
-    node_name: str
-    status: str
+#시스템 상태
 
 
 class SystemStatusCreate(BaseModel):
@@ -119,7 +116,7 @@ class SystemStatusResponse(SystemStatusCreate):
 
 # 오늘의 통계 응답
 class DailyStatsResponse(BaseModel):
-    date: datetime                  # 날짜
-    fall_event_count: int           # 쓰러짐 개수
-    average_confidence_score: float = 0.0  # 기본값 0.0 
-    routine_count: int              # 루틴 개수
+    date: datetime                  
+    fall_event_count: int           
+    average_confidence_score: float = 0.0   
+    routine_count: int             
