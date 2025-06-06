@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, time
+from typing import List, Dict, Any
 
 #User
 class UserCreate(BaseModel):
@@ -120,3 +121,32 @@ class DailyStatsResponse(BaseModel):
     fall_event_count: int           
     average_confidence_score: float = 0.0   
     routine_count: int             
+
+
+class FallVideoBase(BaseModel):
+    timestamp: datetime
+    is_fall: bool
+    keypoints: List[List[float]]
+    bboxes: List[Dict[str, Any]]
+
+class FallVideoCreate(FallVideoBase):
+    pass
+
+class FallVideoResponse(FallVideoBase):
+    id: int
+    file_path: str
+    timestamp: datetime
+    is_fall: bool
+    keypoints: List[List[float]]
+    bboxes: List[Dict[str, Any]]
+
+    model_config = {"from_attributes": True}
+
+class FallVideoListResponse(BaseModel):
+    id: int
+    file_path: str
+    timestamp: datetime
+    is_fall: bool
+
+    model_config = {"from_attributes": True}
+

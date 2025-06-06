@@ -33,3 +33,10 @@ app.include_router(events.router)
 app.include_router(routines.router)
 app.include_router(system.router)
 app.include_router(stats.router)
+from fastapi.staticfiles import StaticFiles
+from routers import fall_events
+# ... existing code ...
+
+app.mount("/media", StaticFiles(directory="media"), name="media")
+app.include_router(fall_events.router, prefix="/fall-events")
+# ... existing code ...

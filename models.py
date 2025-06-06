@@ -2,7 +2,8 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Time
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
-
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy.types import JSON
 Base = declarative_base()
 
 #User
@@ -72,4 +73,13 @@ class SystemStatus(Base):
     status = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
-###
+
+
+class FallEvent(Base):
+    __tablename__ = "fall_events"
+    id = Column(Integer, primary_key=True, index=True)
+    file_path = Column(String, nullable=False)
+    timestamp = Column(DateTime, nullable=False)
+    is_fall = Column(Boolean, nullable=False)
+    keypoints = Column(JSON, nullable=False)
+    bboxes = Column(JSON, nullable=False)
