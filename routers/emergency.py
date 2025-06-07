@@ -73,3 +73,19 @@ def delete_emergency_contact(
     db.delete(contact)
     db.commit()
     return {"message": "삭제 완료"}
+
+from utils.solapi_sms import send_sms
+
+@router.post("/emergency/send-alert")
+def send_emergency_alert(
+    message: str,  # 보낼 메시지
+    db: Session = Depends(get_db)
+):
+    contacts = db.query(models.EmergencyContact).all()
+    if not contacts:
+        raise HTTPException(status_code=404, detail="No emergency contacts found")
+    results = []
+    for contact in contacts:
+        res = send_sms(contact.phone, message)
+        results.append({"phone": contact.phone, "result": res})
+    return {"results": results}
