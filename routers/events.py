@@ -73,14 +73,9 @@ def get_chat_logs(
 ):
     if session_id not in session_store:
         raise HTTPException(status_code=401, detail="Session invalid")
-
     return db.query(models.EventLog).filter(
         models.EventLog.user_id == session_store[session_id],
-        models.EventLog.message.isnot(None),
-        or_(
-            models.EventLog.event_type == "talk",
-            models.EventLog.event_type == "fall_alert"
-        )
+        models.EventLog.message.isnot(None)
     ).all()
 
 # ────────────── 액션 로그 수동 생성 ──────────────
