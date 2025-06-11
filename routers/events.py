@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 import models, schemas
 from database import get_db
 from main import session_store
+from sqlalchemy import or_
 
 router = APIRouter()
 
@@ -64,6 +65,7 @@ def get_my_event_logs(
     ).all()
 
 # ────────────── 채팅 메시지 로그만 조회 ──────────────
+# GET /event-logs/chat
 @router.get("/event-logs/chat", response_model=list[schemas.EventLogResponse])
 def get_chat_logs(
     db: Session = Depends(get_db),
@@ -71,9 +73,14 @@ def get_chat_logs(
 ):
     if session_id not in session_store:
         raise HTTPException(status_code=401, detail="Session invalid")
+
     return db.query(models.EventLog).filter(
         models.EventLog.user_id == session_store[session_id],
-        models.EventLog.message.isnot(None)
+        models.EventLog.message.isnot(None),
+        or_(
+            models.EventLog.event_type == "talk",
+            models.EventLog.event_type == "fall_alert"
+        )
     ).all()
 
 # ────────────── 액션 로그 수동 생성 ──────────────
