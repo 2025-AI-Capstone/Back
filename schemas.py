@@ -120,3 +120,7 @@ class DailyStatsResponse(BaseModel):
     fall_event_count: int           
     average_confidence_score: float = 0.0   
     routine_count: int             
+
+
+class AlertRequest(BaseModel):
+    message: str
