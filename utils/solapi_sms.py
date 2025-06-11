@@ -12,11 +12,13 @@ SOLAPI_FROM_NUMBER = os.getenv("SOLAPI_FROM_NUMBER")
 def send_sms(to, content):
     url = "https://api.solapi.com/messages/v4/send"
     data = {
-        "message": {
-            "to": to,
-            "from": SOLAPI_FROM_NUMBER,
-            "text": content
-        }
+        "messages": [  
+            {
+                "to": to.replace("-", ""),              
+                "from": SOLAPI_FROM_NUMBER.replace("-", ""),
+                "text": content
+            }
+        ]
     }
     response = requests.post(
         url,
@@ -24,3 +26,4 @@ def send_sms(to, content):
         auth=(SOLAPI_API_KEY, SOLAPI_API_SECRET)
     )
     return response.json()
+
