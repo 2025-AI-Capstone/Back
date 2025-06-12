@@ -2,6 +2,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Time
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 Base = declarative_base()
 
@@ -13,7 +14,7 @@ class User(Base):
     name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
     password = Column(String, nullable=False)  
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(ZoneInfo("Asia/Seoul")))
     information = Column(String, default="")  
 
 
@@ -38,19 +39,19 @@ class EventLog(Base):
     event_type = Column(String)  
     status = Column(String)     
     confidence_score = Column(Float)
-    detected_at = Column(DateTime, default=datetime.utcnow)
+    detected_at = Column(DateTime, default=lambda: datetime.now(ZoneInfo("Asia/Seoul")))
     message = Column(String, nullable=True)  # 텍스트 저장
 
 #Routine
 class Routine(Base):
     __tablename__ = "routines"
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
     title = Column(String)
     description = Column(String)
     alarm_time = Column(Time)
     repeat_type = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)  
+    created_at = Column(DateTime, default=lambda: datetime.now(ZoneInfo("Asia/Seoul")))  
     
 #ActionLog
 class ActionLog(Base):
@@ -59,7 +60,7 @@ class ActionLog(Base):
     event_id = Column(Integer)
     action_type = Column(String)
     triggered_by = Column(String)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(ZoneInfo("Asia/Seoul")))
     status = Column(Float)   
      
 
@@ -70,6 +71,6 @@ class SystemStatus(Base):
     event_id = Column(Integer)
     node_name = Column(String)
     status = Column(String)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(ZoneInfo("Asia/Seoul")))
 
 ###

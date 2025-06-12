@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, time
+from zoneinfo import ZoneInfo
 import models, schemas
 from database import get_db
 
@@ -12,9 +13,9 @@ router = APIRouter()
 def get_today_stats(
     db: Session = Depends(get_db)
 ):
-    today = datetime.now().date()
-    start = datetime.combine(today, time.min)
-    end = datetime.combine(today, time.max)
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
+    start = datetime.combine(today, time.min, tzinfo=ZoneInfo("Asia/Seoul"))
+    end = datetime.combine(today, time.max, tzinfo=ZoneInfo("Asia/Seoul"))
 
     fall_count, avg_confidence = db.query(
         func.count(models.EventLog.id),
