@@ -9,7 +9,8 @@ from routers import (
     events,
     routines,
     system,
-    stats
+    stats,
+    fall_alert
 )
 
 init_db()
@@ -33,3 +34,4 @@ app.include_router(events.router)
 app.include_router(routines.router)
 app.include_router(system.router)
 app.include_router(stats.router)
+app.include_router(fall_alert.router)
