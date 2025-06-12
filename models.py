@@ -46,7 +46,7 @@ class EventLog(Base):
 class Routine(Base):
     __tablename__ = "routines"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer)
     title = Column(String)
     description = Column(String)
     alarm_time = Column(Time)
