@@ -1,73 +1,30 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
-from std_srvs.srv import SetBool, Trigger
-import rclpy
-from rclpy.node import Node
-import time
+import redis
 
 router = APIRouter()
+r = redis.Redis(host='localhost', port=6379, db=0)
+STATE_KEY = "fall_alert_enabled"
 
 class ToggleFallAlertRequest(BaseModel):
-    enabled: bool  # True: 알림 켜기, False: 알림 끄기
-
-def get_temp_node():
-
-    rclpy.init(args=None)
-    return rclpy.create_node('fall_alert_toggle_node')
+    enabled: bool
 
 @router.post("/toggle-fall-alert")
 def toggle_fall_alert(req: ToggleFallAlertRequest):
-    node = get_temp_node()
-    client = node.create_client(SetBool, 'falldetector/enable_alert')
+    command = "enable" if req.enabled else "disable"
 
-    if not client.wait_for_service(timeout_sec=2.0):
-        node.destroy_node()
-        raise HTTPException(status_code=503, detail="Fall alert service unavailable")
+    # 1. Pub/Sub: ROS2에 명령 전달
+    r.publish("fall_alert_toggle", command)
 
-    request = SetBool.Request()
-    request.data = req.enabled
+    # 2. 상태 저장
+    r.set(STATE_KEY, "true" if req.enabled else "false")
 
-    future = client.call_async(request)
-    rclpy.spin_until_future_complete(node, future)
-
-    if future.result() is None:
-        node.destroy_node()
-        raise HTTPException(status_code=500, detail="No response from service")
-
-    result = future.result()
-    node.destroy_node()
-
-    return {
-        "success": result.success,
-        "message": result.message,
-        "enabled": req.enabled
-    }
+    return {"success": True, "command": command}
 
 @router.get("/fall-alert/status")
 def get_fall_alert_status():
-    try:
-        rclpy.init(args=None)
-    except RuntimeError:
-        pass  # 이미 초기화됐을 수 있음
-
-    node = rclpy.create_node('fall_alert_status_client')
-    client = node.create_client(Trigger, 'fall_alert/get_alert_status')
-
-    if not client.wait_for_service(timeout_sec=2.0):
-        node.destroy_node()
-        raise HTTPException(status_code=503, detail="Fall alert status service unavailable")
-
-    request = Trigger.Request()
-    future = client.call_async(request)
-    rclpy.spin_until_future_complete(node, future)
-
-    if future.result() is None:
-        node.destroy_node()
-        raise HTTPException(status_code=500, detail="No response from service")
-
-    result = future.result()
-    node.destroy_node()
-
-    return {
-        "enabled": (result.message == "enabled")
-    }
+    val = r.get(STATE_KEY)
+    if val is None:
+        # 기본값: 알림 켜짐
+        return {"enabled": True}
+    return {"enabled": val.decode() == "true"}
