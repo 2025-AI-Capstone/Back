@@ -53,17 +53,6 @@ class Routine(Base):
     repeat_type = Column(String)
     created_at = Column(DateTime, default=lambda: datetime.now(ZoneInfo("Asia/Seoul")))  
     
-#ActionLog
-class ActionLog(Base):
-    __tablename__ = "action_logs"
-    id = Column(Integer, primary_key=True)
-    event_id = Column(Integer)
-    action_type = Column(String)
-    triggered_by = Column(String)
-    timestamp = Column(DateTime, default=lambda: datetime.now(ZoneInfo("Asia/Seoul")))
-    status = Column(Float)   
-     
-
 #SystemStatus
 class SystemStatus(Base):
     __tablename__ = "system_statuses"

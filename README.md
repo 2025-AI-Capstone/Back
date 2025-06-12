@@ -57,13 +57,6 @@
   - `repeat_type`: `"daily"`, `"once"` 등
 - `GET /routines/me` : 내 루틴 목록
 
-## 액션 로그 (ActionLog)
-
-- `POST /action-logs`
-  - `action_type`: `"object_detected"`, `"tracking_time"` 등
-  - `status`: 추적시간이면 초단위 숫자 (예: `3600.0`), 감지 횟수면 `1.0` 등
-- `GET /action-logs/event/{event_id}` : 특정 이벤트에 대한 액션 로그 조회
-
 ## 시스템 상태 (SystemStatus)
 
 - `POST /system-statuses` : 시스템 상태 수동 기록

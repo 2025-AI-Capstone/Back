@@ -83,26 +83,9 @@ class RoutineResponse(RoutineCreate):
         "from_attributes": True
     }
 
-# 액션로그
-class ActionLogCreate(BaseModel):
-    event_id: int
-    action_type: str
-    triggered_by: str
-    status : float
-
-class ActionLogResponse(ActionLogCreate):
-    id: int
-    timestamp: datetime
-
-    model_config = {
-        "from_attributes": True
-    }
-
-
 #시스템 상태
-
-
 class SystemStatusCreate(BaseModel):
+    event_id: int
     node_name: str
     status: str
 
